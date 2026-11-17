@@ -1,0 +1,615 @@
+import javax.swing.*;
+import javax.swing.border.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.util.ArrayList;
+
+public class MatrixCalculator extends JFrame {
+
+    private JTextField display;
+    private JLabel expressionLabel;
+    private JLabel statusLabel;
+
+    private DefaultListModel<String> historyModel;
+    private JList<String> historyList;
+    private ArrayList<BigDecimal> historyValues = new ArrayList<>();
+
+    private BigDecimal firstNumber = BigDecimal.ZERO;
+    private String operator = "";
+    private boolean startNew = true;
+
+    private final Color BG = new Color(8, 14, 19);
+    private final Color PANEL = new Color(16, 28, 33);
+    private final Color BUTTON = new Color(24, 43, 43);
+    private final Color GREEN = new Color(67, 245, 176);
+    private final Color MUTED = new Color(125, 157, 148);
+    private final Color WHITE = new Color(225, 240, 234);
+
+    private final Font MAIN_FONT =
+        new Font("Consolas", Font.PLAIN, 19);
+
+    public MatrixCalculator() {
+
+        setTitle("MATRIX // CORE");
+        setSize(920, 620);
+        setMinimumSize(new Dimension(760, 540));
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        getContentPane().setBackground(BG);
+        setLayout(new BorderLayout(18, 18));
+
+        createHeader();
+        createMainArea();
+        createKeyboard();
+
+        setVisible(true);
+    }
+
+    private void createHeader() {
+
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBackground(BG);
+        header.setBorder(
+            new EmptyBorder(20, 25, 5, 25)
+        );
+
+        JPanel brand = new JPanel(new GridLayout(2, 1));
+        brand.setBackground(BG);
+
+        JLabel title = new JLabel("MATRIX // CORE");
+        title.setForeground(GREEN);
+        title.setFont(
+            new Font("Consolas", Font.BOLD, 27)
+        );
+
+        JLabel subtitle = new JLabel(
+            "NUMERICAL OPERATIONS TERMINAL"
+        );
+        subtitle.setForeground(MUTED);
+        subtitle.setFont(
+            new Font("Consolas", Font.PLAIN, 11)
+        );
+
+        brand.add(title);
+        brand.add(subtitle);
+
+        statusLabel = new JLabel("● SYSTEM ONLINE");
+        statusLabel.setForeground(GREEN);
+        statusLabel.setFont(
+            new Font("Consolas", Font.BOLD, 12)
+        );
+
+        header.add(brand, BorderLayout.WEST);
+        header.add(statusLabel, BorderLayout.EAST);
+
+        add(header, BorderLayout.NORTH);
+    }
+
+    private void createMainArea() {
+
+        JPanel main = new JPanel(new GridLayout(1, 2, 15, 0));
+        main.setBackground(BG);
+        main.setBorder(
+            new EmptyBorder(10, 25, 20, 25)
+        );
+
+        main.add(createCalculatorPanel());
+        main.add(createHistoryPanel());
+
+        add(main, BorderLayout.CENTER);
+    }
+
+    private JPanel createCalculatorPanel() {
+
+        JPanel panel = new JPanel(new BorderLayout(10, 15));
+        panel.setBackground(PANEL);
+        panel.setBorder(
+            new CompoundBorder(
+                new LineBorder(new Color(35, 75, 64), 1),
+                new EmptyBorder(18, 18, 18, 18)
+            )
+        );
+
+        // DISPLAY AREA
+
+        JPanel screen = new JPanel(new GridLayout(2, 1, 5, 5));
+        screen.setBackground(PANEL);
+
+        expressionLabel = new JLabel("AWAITING INPUT...");
+        expressionLabel.setForeground(MUTED);
+        expressionLabel.setFont(
+            new Font("Consolas", Font.PLAIN, 14)
+        );
+
+        display = new JTextField("0");
+        display.setEditable(false);
+        display.setHorizontalAlignment(JTextField.RIGHT);
+        display.setBackground(new Color(8, 18, 20));
+        display.setForeground(GREEN);
+        display.setCaretColor(GREEN);
+        display.setFont(
+            new Font("Consolas", Font.BOLD, 36)
+        );
+
+        display.setBorder(
+            new CompoundBorder(
+                new LineBorder(new Color(38, 110, 84), 1),
+                new EmptyBorder(12, 10, 12, 10)
+            )
+        );
+
+        screen.add(expressionLabel);
+        screen.add(display);
+
+        panel.add(screen, BorderLayout.NORTH);
+
+        // BUTTON GRID
+
+        JPanel grid = new JPanel(new GridLayout(5, 4, 9, 9));
+        grid.setBackground(PANEL);
+
+        String[] buttons = {
+            "AC", "DEL", "+/-", "÷",
+            "7", "8", "9", "×",
+            "4", "5", "6", "−",
+            "1", "2", "3", "+",
+            "0", ".", "%", "="
+        };
+
+        for (String text : buttons) {
+
+            JButton button = new JButton(text);
+
+            button.setFont(
+                new Font("Consolas", Font.BOLD, 19)
+            );
+
+            button.setFocusPainted(false);
+            button.setForeground(GREEN);
+            button.setBackground(BUTTON);
+
+            button.setBorder(
+                new LineBorder(new Color(46, 88, 75), 1)
+            );
+
+            button.setCursor(
+                Cursor.getPredefinedCursor(
+                    Cursor.HAND_CURSOR
+                )
+            );
+
+            button.addActionListener(e ->
+                handleCommand(text)
+            );
+
+            grid.add(button);
+        }
+
+        panel.add(grid, BorderLayout.CENTER);
+
+        JLabel footer = new JLabel(
+            "ENGINE: BIGDECIMAL  |  PRECISION: DECIMAL128"
+        );
+
+        footer.setForeground(MUTED);
+        footer.setFont(
+            new Font("Consolas", Font.PLAIN, 10)
+        );
+
+        panel.add(footer, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    private JPanel createHistoryPanel() {
+
+        JPanel panel = new JPanel(new BorderLayout(10, 12));
+        panel.setBackground(PANEL);
+
+        panel.setBorder(
+            new CompoundBorder(
+                new LineBorder(new Color(35, 75, 64), 1),
+                new EmptyBorder(18, 18, 18, 18)
+            )
+        );
+
+        // HISTORY HEADER
+
+        JPanel top = new JPanel(new BorderLayout());
+        top.setBackground(PANEL);
+
+        JLabel heading = new JLabel("CALCULATION HISTORY");
+        heading.setForeground(GREEN);
+        heading.setFont(
+            new Font("Consolas", Font.BOLD, 17)
+        );
+
+        JButton clearHistory = new JButton("CLEAR ALL");
+        clearHistory.setForeground(MUTED);
+        clearHistory.setBackground(BG);
+        clearHistory.setFont(
+            new Font("Consolas", Font.PLAIN, 10)
+        );
+        clearHistory.setFocusPainted(false);
+
+        clearHistory.addActionListener(e -> {
+            historyModel.clear();
+            historyValues.clear();
+            expressionLabel.setText("HISTORY CLEARED");
+        });
+
+        top.add(heading, BorderLayout.WEST);
+        top.add(clearHistory, BorderLayout.EAST);
+
+        panel.add(top, BorderLayout.NORTH);
+
+        // HISTORY LIST
+
+        historyModel = new DefaultListModel<>();
+        historyList = new JList<>(historyModel);
+
+        historyList.setBackground(
+            new Color(10, 20, 24)
+        );
+
+        historyList.setForeground(WHITE);
+        historyList.setFont(
+            new Font("Consolas", Font.PLAIN, 13)
+        );
+
+        historyList.setSelectionBackground(
+            new Color(23, 75, 55)
+        );
+
+        historyList.setSelectionForeground(GREEN);
+
+        historyList.setFixedCellHeight(45);
+        historyList.setBorder(
+            new EmptyBorder(5, 8, 5, 8)
+        );
+
+        historyList.addMouseListener(new MouseAdapter() {
+
+            @Override
+            public void mouseClicked(MouseEvent e) {
+
+                int index = historyList.locationToIndex(
+                    e.getPoint()
+                );
+
+                if (index >= 0 &&
+                    historyList.getCellBounds(index, index)
+                    .contains(e.getPoint())) {
+
+                    BigDecimal value = historyValues.get(index);
+
+                    display.setText(format(value));
+                    firstNumber = value;
+                    operator = "";
+                    startNew = true;
+
+                    expressionLabel.setText(
+                        "RESTORED FROM HISTORY"
+                    );
+                }
+            }
+        });
+
+        JScrollPane scroll = new JScrollPane(historyList);
+
+        scroll.setBorder(
+            new LineBorder(new Color(35, 75, 64), 1)
+        );
+
+        scroll.getViewport().setBackground(
+            new Color(10, 20, 24)
+        );
+
+        panel.add(scroll, BorderLayout.CENTER);
+
+        JLabel hint = new JLabel(
+            "SELECT ANY PREVIOUS RESULT TO REUSE IT"
+        );
+
+        hint.setForeground(MUTED);
+        hint.setFont(
+            new Font("Consolas", Font.PLAIN, 10)
+        );
+
+        panel.add(hint, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    private void createKeyboard() {
+
+        String[] keys = {
+            "0", "1", "2", "3", "4",
+            "5", "6", "7", "8", "9",
+            ".", "+", "-", "*", "/",
+            "%", "=", "ENTER", "BACKSPACE",
+            "ESCAPE"
+        };
+
+        for (String key : keys) {
+
+            String command = key;
+
+            String stroke = key;
+
+            if (key.equals("ENTER")) stroke = "ENTER";
+            if (key.equals("BACKSPACE")) stroke = "BACK_SPACE";
+            if (key.equals("ESCAPE")) stroke = "ESCAPE";
+
+            getRootPane().getInputMap(
+                JComponent.WHEN_IN_FOCUSED_WINDOW
+            ).put(KeyStroke.getKeyStroke(stroke), key);
+
+            getRootPane().getActionMap().put(
+                key,
+                new AbstractAction() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+
+                        if (command.equals("ENTER")) {
+                            handleCommand("=");
+                        } else if (command.equals("BACKSPACE")) {
+                            handleCommand("DEL");
+                        } else if (command.equals("ESCAPE")) {
+                            handleCommand("AC");
+                        } else {
+                            handleCommand(command);
+                        }
+                    }
+                }
+            );
+        }
+    }
+
+    private void handleCommand(String command) {
+
+        // CLEAR
+
+        if (command.equals("AC")) {
+
+            display.setText("0");
+            expressionLabel.setText("AWAITING INPUT...");
+            firstNumber = BigDecimal.ZERO;
+            operator = "";
+            startNew = true;
+            return;
+        }
+
+        // DELETE
+
+        if (command.equals("DEL")) {
+
+            if (!startNew) {
+
+                String value = display.getText();
+
+                if (value.length() > 1) {
+                    display.setText(
+                        value.substring(0, value.length() - 1)
+                    );
+                } else {
+                    display.setText("0");
+                    startNew = true;
+                }
+            }
+
+            return;
+        }
+
+        // SIGN CHANGE
+
+        if (command.equals("+/-")) {
+
+            try {
+                BigDecimal value =
+                    new BigDecimal(display.getText());
+
+                display.setText(format(value.negate()));
+            } catch (Exception ignored) {}
+
+            return;
+        }
+
+        // NUMBER INPUT
+
+        if (command.matches("[0-9]") || command.equals(".")) {
+
+            if (startNew) {
+
+                display.setText(
+                    command.equals(".") ? "0." : command
+                );
+
+                startNew = false;
+
+            } else {
+
+                if (command.equals(".") &&
+                    display.getText().contains(".")) {
+                    return;
+                }
+
+                if (display.getText().length() >= 40) {
+                    return;
+                }
+
+                display.setText(
+                    display.getText() + command
+                );
+            }
+
+            return;
+        }
+
+        // OPERATOR INPUT
+
+        if (command.matches("[+\\-*/%×÷−]")) {
+
+            try {
+
+                if (!operator.isEmpty() && !startNew) {
+                    performCalculation(false);
+                }
+
+                firstNumber =
+                    new BigDecimal(display.getText());
+
+                operator = convertOperator(command);
+
+                expressionLabel.setText(
+                    format(firstNumber) + " " + operator
+                );
+
+                startNew = true;
+
+            } catch (Exception ex) {
+                showError();
+            }
+
+            return;
+        }
+
+        // EQUALS
+
+        if (command.equals("=")) {
+
+            if (operator.isEmpty() || startNew) {
+                return;
+            }
+
+            try {
+                performCalculation(true);
+            } catch (Exception ex) {
+                showError();
+            }
+        }
+    }
+
+    private String convertOperator(String op) {
+
+        switch (op) {
+            case "×": return "*";
+            case "÷": return "/";
+            case "−": return "-";
+            default: return op;
+        }
+    }
+
+    private void performCalculation(boolean saveHistory) {
+
+        BigDecimal secondNumber =
+            new BigDecimal(display.getText());
+
+        BigDecimal result;
+
+        String expression =
+            format(firstNumber) + " " +
+            operator + " " +
+            format(secondNumber);
+
+        switch (operator) {
+
+            case "+":
+                result = firstNumber.add(secondNumber);
+                break;
+
+            case "-":
+                result = firstNumber.subtract(secondNumber);
+                break;
+
+            case "*":
+                result = firstNumber.multiply(secondNumber);
+                break;
+
+            case "/":
+
+                if (secondNumber.compareTo(BigDecimal.ZERO) == 0) {
+                    throw new ArithmeticException();
+                }
+
+                result = firstNumber.divide(
+                    secondNumber,
+                    MathContext.DECIMAL128
+                );
+                break;
+
+            case "%":
+
+                if (secondNumber.compareTo(BigDecimal.ZERO) == 0) {
+                    throw new ArithmeticException();
+                }
+
+                result = firstNumber.remainder(secondNumber);
+                break;
+
+            default:
+                return;
+        }
+
+        display.setText(format(result));
+
+        expressionLabel.setText(
+            expression + " ="
+        );
+
+        if (saveHistory) {
+
+            historyModel.add(0,
+                expression + "  =  " + format(result)
+            );
+
+            historyValues.add(0, result);
+
+            // Keep the latest 100 calculations
+
+            if (historyModel.size() > 100) {
+                historyModel.removeElementAt(100);
+                historyValues.remove(100);
+            }
+
+            statusLabel.setText("● CALCULATION COMPLETE");
+        }
+
+        firstNumber = result;
+        operator = "";
+        startNew = true;
+    }
+
+    private String format(BigDecimal value) {
+
+        return value.stripTrailingZeros()
+                    .toPlainString();
+    }
+
+    private void showError() {
+
+        JOptionPane.showMessageDialog(
+            this,
+            "Division or modulus by zero is not allowed.",
+            "MATRIX SYSTEM ERROR",
+            JOptionPane.ERROR_MESSAGE
+        );
+
+        display.setText("0");
+        expressionLabel.setText("ERROR // RESET REQUIRED");
+
+        firstNumber = BigDecimal.ZERO;
+        operator = "";
+        startNew = true;
+    }
+
+    public static void main(String[] args) {
+
+        SwingUtilities.invokeLater(() -> {
+            new MatrixCalculator();
+        });
+    }
+}
